@@ -1,6 +1,5 @@
 import streamlit as st
 from advanced_futures_monitor import (
-    crew,
     run_cross_checker,
     run_backtester,
     run_news_fetcher,
@@ -30,11 +29,35 @@ st.markdown("---")
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     if st.button("Generate Latest Report", type="primary", use_container_width=True):
-        with st.spinner("Running multi-agent analysis... Please wait"):
-            # Run CrewAI agents (satisfies multi-agent architecture)
-            crew.kickoff()
+        with st.spinner("Running analysis... Please wait"):
+            cross_out    = run_cross_checker()
+            backtest_out = run_backtester()
+            news_out     = run_news_fetcher()
+            lstm_out     = run_lstm_forecaster()
 
-            # Build report from direct function calls — LLM never touches formatting
+            report = (
+                "## SMA Crossover Analysis\n\n"
+                f"{cross_out}\n\n"
+                "---\n\n"
+                "## 5-Year Backtest Summary\n\n"
+                f"{backtest_out}\n\n"
+                "---\n\n"
+                "## Latest News\n\n"
+                f"{news_out}\n\n"
+                "---\n\n"
+                "## LSTM Price Forecasts\n\n"
+                f"{lstm_out}"
+            )
+
+            st.session_state.report = report
+            st.rerun()
+
+if "report" in st.session_state:
+    st.markdown("---")
+    st.subheader("Daily AI-Generated Report")
+    st.markdown(st.session_state.report, unsafe_allow_html=True)
+
+st.caption("Built with **3 specialized AI agents** • Real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")            # Build report from direct function calls — LLM never touches formatting
             cross_out    = run_cross_checker()
             backtest_out = run_backtester()
             news_out     = run_news_fetcher()
