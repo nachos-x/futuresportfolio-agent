@@ -3,6 +3,23 @@ from advanced_stock_monitor import crew
 
 st.set_page_config(page_title="Energy Futures Monitor", layout="wide")
 
+st.markdown("""
+<style>
+h1, h2, h3, h4, h5 {
+    font-size: 1.6rem !important;
+    font-weight: 700 !important;
+    margin-top: 1.2rem !important;
+    margin-bottom: 0.6rem !important;
+    color: #1f77b4;
+}
+h4 {
+    font-size: 1.35rem !important;
+    border-bottom: 2px solid #1f77b4;
+    padding-bottom: 4px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("Autonomous Energy Futures Monitor")
 st.markdown("**Multi-Agent AI System • CrewAI + Real Market Data + LSTM Forecasting**")
 
