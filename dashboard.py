@@ -6,12 +6,7 @@ st.set_page_config(page_title="Stock Portfolio Monitor", layout="wide")
 st.title("Autonomous Stock Portfolio Monitor Dashboard")
 st.markdown("**Multi-Agent AI System • CrewAI + Real Market Data + LSTM Forecasting**")
 
-PORTFOLIO = ["CL=F": "WTI Crude Oil",
-    "BZ=F": "Brent Crude Oil", 
-    "NG=F": "Natural Gas",
-    "HO=F": "Heating Oil",
-    "RB=F": "RBOB Gasoline",
-    "GC=F": "Gold Futures"]
+PORTFOLIO = ["CL=F: WTI Crude Oil", "BZ=F: Brent Crude Oil", "NG=F: Natural Gas", "HO=F: Heating Oil", "RB=F: RBOB Gasoline", "GC=F: Gold Futures"]
 
 
 col1, col2 = st.columns([1, 3])
