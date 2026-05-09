@@ -22,22 +22,18 @@ TICKER_DISPLAY = {
     "GC=F": "Gold Futures"
 }
 
-# ---------------------------------------------------------------------------
-# Cached data fetchers — @st.cache_data stores results for 1 hour so repeated
-# report runs within the same day skip the network round-trips entirely.
-# ---------------------------------------------------------------------------
+def colorize_number(num: float, fmt: str = "{:+.2f}%") -> str:
+    color = "green" if num > 0 else "red"
+    text = fmt.format(num)
+    return f'<span style="color:{color}">{text}</span>'
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_ohlcv(ticker: str, period: str) -> pd.DataFrame:
-    """Download OHLCV data from yfinance with 1-hour cache."""
     return yf.download(ticker, period=period, progress=False)
-
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_close(ticker: str, period: str) -> pd.Series:
-    """Download closing prices from yfinance with 1-hour cache."""
     return yf.download(ticker, period=period, progress=False)["Close"].squeeze()
-
 
 llm = LLM(
     model="openrouter/meta-llama/llama-3.3-70b-instruct",
@@ -46,9 +42,7 @@ llm = LLM(
     temperature=0.0,
 )
 
-
 def run_cross_checker() -> str:
-    """Detects golden/death crosses and imminent crossovers using 50/200 SMA."""
     crosses = []
     imminent = []
     status = []
@@ -70,25 +64,20 @@ def run_cross_checker() -> str:
             sma200 = float(latest["SMA200"])
             gap_pct = ((sma50 - sma200) / sma200) * 100
 
-            # Confirmed cross today
             if prev["SMA50"] <= prev["SMA200"] and latest["SMA50"] > latest["SMA200"]:
-                crosses.append(f"🟡 **GOLDEN CROSS — {display_name} ({ticker})** on {date} (bullish)")
+                crosses.append(f"**GOLDEN CROSS — {display_name} ({ticker})** on {date} (bullish)")
             elif prev["SMA50"] >= prev["SMA200"] and latest["SMA50"] < latest["SMA200"]:
-                crosses.append(f"💀 **DEATH CROSS — {display_name} ({ticker})** on {date} (bearish)")
-            # Imminent: SMAs within 1.5% of each other but not yet crossed
+                crosses.append(f"**DEATH CROSS — {display_name} ({ticker})** on {date} (bearish)")
             elif abs(gap_pct) <= 1.5:
-                direction = "approaching Golden Cross 🟡" if gap_pct > 0 else "approaching Death Cross 💀"
+                direction = "approaching Golden Cross" if gap_pct > 0 else "approaching Death Cross"
                 trend = "bullish" if gap_pct > 0 else "bearish"
                 imminent.append(
-                    f"⚠️ **{display_name} ({ticker})** — SMA50 is {abs(gap_pct):.2f}% {direction} ({trend} signal imminent)"
+                    f"**{display_name} ({ticker})** — SMA50 is {abs(gap_pct):.2f}% {direction} ({trend} signal imminent)"
                 )
-            # Normal status
             else:
                 trend = "Bullish" if gap_pct > 0 else "Bearish"
-                color = "green" if gap_pct > 0 else "red"
                 status.append(
-                    f'- {display_name} ({ticker}): {trend} trend | SMA gap '
-                    f'<span style="color:{color}">{gap_pct:+.2f}%</span>'
+                    f'- {display_name} ({ticker}): {trend} trend | SMA gap {colorize_number(gap_pct)}'
                 )
         except Exception:
             pass
@@ -102,9 +91,7 @@ def run_cross_checker() -> str:
         sections.append("**Current SMA Status**\n" + "\n".join(status))
     return "\n\n".join(sections) if sections else "No data available."
 
-
 def run_backtester() -> str:
-    """5-year SMA crossover backtest vs buy and hold."""
     results = []
     for ticker in PORTFOLIO:
         display_name = TICKER_DISPLAY[ticker]
@@ -124,20 +111,16 @@ def run_backtester() -> str:
             bh_return = float(data["Close"].iloc[-1]) / float(data["Close"].iloc[0]) - 1
             s_pct = strategy_return * 100
             b_pct = bh_return * 100
-            s_color = "green" if s_pct > 0 else "red"
-            b_color = "green" if b_pct > 0 else "red"
             results.append(
                 f'- {display_name} ({ticker}): '
-                f'Strategy <span style="color:{s_color}">{s_pct:+.2f}%</span> | '
-                f'Buy&amp;Hold <span style="color:{b_color}">{b_pct:+.2f}%</span>'
+                f'Strategy {colorize_number(s_pct)} | '
+                f'Buy&Hold {colorize_number(b_pct)}'
             )
         except Exception as e:
             results.append(f"- {display_name} ({ticker}): Calculation error — {e}")
     return "5-Year Backtest Summary\n" + "\n".join(results)
 
-
 def run_news_fetcher() -> str:
-    """Fetches recent news for energy futures with clickable links."""
     TICKER_QUERIES = {
         "CL=F": "WTI crude oil futures price",
         "BZ=F": "Brent crude oil futures price",
@@ -169,9 +152,7 @@ def run_news_fetcher() -> str:
             pass
     return "\n\n".join(all_news) if all_news else "No recent news found."
 
-
 def run_lstm_forecaster() -> str:
-    """Generates 5-day LSTM forecasts with green/red colors."""
     forecasts = []
     for ticker in PORTFOLIO:
         display_name = TICKER_DISPLAY[ticker]
@@ -231,37 +212,34 @@ def run_lstm_forecaster() -> str:
             ).flatten()
             last_date = df.index[-1]
             future_dates = pd.date_range(last_date + pd.Timedelta(days=1), periods=5, freq="B")
-            lines = [f"**{display_name} ({ticker}) 5-Day Forecast**"]
+            lines = [f"**{display_name} ({ticker}) 5-Day Forecast** (Current: ${current_price:.2f})"]
             for date, price in zip(future_dates, predictions):
-                color = "green" if price > current_price else "red"
-                lines.append(f'- {date.strftime("%Y-%m-%d")}: <span style="color:{color}">${price:.2f}</span>')
+                change_pct = ((price - current_price) / current_price) * 100
+                color = "green" if change_pct > 0 else "red"
+                lines.append(
+                    f'- {date.strftime("%Y-%m-%d")}: <span style="color:{color}">${price:.2f}</span> '
+                    f'({colorize_number(change_pct, "{:+.1f}%")})'
+                )
             forecasts.append("\n".join(lines))
         except Exception as e:
             forecasts.append(f"**{display_name} ({ticker})**: Forecast failed — {e}")
     return "\n\n".join(forecasts) if forecasts else "No forecasts."
 
-
-# Thin CrewAI tool wrappers — agents use these; report assembly calls the plain functions directly
 @tool("Stock Cross Checker")
 def stock_cross_checker() -> str:
-    """Detects golden and death crosses using 50/200 SMA."""
     return run_cross_checker()
 
 @tool("Backtester")
 def backtester() -> str:
-    """5-year SMA crossover backtest vs buy and hold."""
     return run_backtester()
 
 @tool("News Fetcher")
 def news_fetcher() -> str:
-    """Fetches recent news for energy futures with clickable links."""
     return run_news_fetcher()
 
 @tool("LSTM Price Forecaster")
 def lstm_price_forecaster() -> str:
-    """Generates 5-day LSTM forecasts with green/red colors."""
     return run_lstm_forecaster()
-
 
 technical_analyst = Agent(
     role="Technical Analyst",
@@ -300,7 +278,7 @@ news_task = Task(
 )
 
 forecast_task = Task(
-    description="Run the LSTM forecaster tool and return only the raw output. Do not add any commentary.",
+    description="Run the LSTM forecaster tool and return only the raw output.",
     expected_output="Raw text output from the LSTM forecaster tool only.",
     agent=forecast_agent,
 )
