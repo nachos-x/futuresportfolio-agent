@@ -51,16 +51,6 @@ with col2:
 
 if "report" in st.session_state:
     st.markdown("### Daily AI-Generated Report")
-    
-    # Render with proper markdown (bigger headings)
     st.markdown(st.session_state.report, unsafe_allow_html=False)
-
-st.caption("Built with **3 specialized AI agents** • Real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")    # Clean, professional formatting
-    st.text_area(
-        label="Report",
-        value=st.session_state.report,
-        height=850,
-        label_visibility="collapsed"
-    )
 
 st.caption("Built with **3 specialized AI agents** • Real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")
