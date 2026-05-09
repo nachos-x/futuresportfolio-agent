@@ -1,5 +1,18 @@
 import streamlit as st
-from advanced_futures_monitor import crew
+
+st.set_page_config(page_title="Energy Futures Monitor", layout="wide")
+
+try:
+    from advanced_futures_monitor import crew
+    import_error = None
+except Exception as e:
+    import traceback
+    import_error = traceback.format_exc()
+
+if import_error:
+    st.error("Import failed:")
+    st.code(import_error)
+    st.stop()
 
 st.set_page_config(page_title="Energy Futures Monitor", layout="wide")
 
