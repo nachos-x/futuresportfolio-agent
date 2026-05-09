@@ -13,7 +13,7 @@ import streamlit as st
 from crewai import Agent, Task, Crew, LLM
 from crewai.tools import tool
 
-PORTFOLIO = ["AAPL", "MSFT", "GOOG", "AMZN", "TSLA", "NVDA"]
+PORTFOLIO = ["CL=F", "BZ=F", "NG=F", "HO=F", "RB=F", "GC=F"]
 
 llm = LLM(
     model="openrouter/meta-llama/llama-3.3-70b-instruct",
