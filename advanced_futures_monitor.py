@@ -22,6 +22,23 @@ TICKER_DISPLAY = {
     "GC=F": "Gold Futures"
 }
 
+# ---------------------------------------------------------------------------
+# Cached data fetchers — @st.cache_data stores results for 1 hour so repeated
+# report runs within the same day skip the network round-trips entirely.
+# ---------------------------------------------------------------------------
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_ohlcv(ticker: str, period: str) -> pd.DataFrame:
+    """Download OHLCV data from yfinance with 1-hour cache."""
+    return yf.download(ticker, period=period, progress=False)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_close(ticker: str, period: str) -> pd.Series:
+    """Download closing prices from yfinance with 1-hour cache."""
+    return yf.download(ticker, period=period, progress=False)["Close"].squeeze()
+
+
 llm = LLM(
     model="openrouter/meta-llama/llama-3.3-70b-instruct",
     base_url="https://openrouter.ai/api/v1",
@@ -39,7 +56,7 @@ def stock_cross_checker() -> str:
     for ticker in PORTFOLIO:
         display_name = TICKER_DISPLAY[ticker]
         try:
-            raw = yf.download(ticker, period="730d", progress=False)
+            raw = fetch_ohlcv(ticker, "730d")
             data = pd.DataFrame({"Close": raw["Close"].squeeze()})
             if len(data) < 200:
                 continue
@@ -94,7 +111,7 @@ def backtester() -> str:
     for ticker in PORTFOLIO:
         display_name = TICKER_DISPLAY[ticker]
         try:
-            raw = yf.download(ticker, period="5y", progress=False)
+            raw = fetch_ohlcv(ticker, "5y")
             close = raw["Close"].squeeze()
             data = pd.DataFrame({"Close": close})
             if len(data) < 250:
@@ -163,7 +180,7 @@ def lstm_price_forecaster() -> str:
     for ticker in PORTFOLIO:
         display_name = TICKER_DISPLAY[ticker]
         try:
-            df = yf.download(ticker, period="3y", progress=False)["Close"].squeeze()
+            df = fetch_close(ticker, "3y")
             if len(df) < 200:
                 forecasts.append(f"**{display_name} ({ticker})**: Insufficient data")
                 continue
