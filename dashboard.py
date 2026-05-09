@@ -60,30 +60,4 @@ if "report" in st.session_state:
     st.subheader("Daily AI-Generated Report")
     st.markdown(st.session_state.report, unsafe_allow_html=True)
 
-st.caption("Built with real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")            cross_out    = run_cross_checker()
-            backtest_out = run_backtester()
-            news_out     = run_news_fetcher()
-            lstm_out     = run_lstm_forecaster()
-
-            report = (
-                "## SMA Crossover Analysis\n\n"
-                f"{cross_out}\n\n"
-                "---\n\n"
-                "## 5-Year Backtest Summary\n\n"
-                f"{backtest_out}\n\n"
-                "---\n\n"
-                "## Latest News\n\n"
-                f"{news_out}\n\n"
-                "---\n\n"
-                "## LSTM Price Forecasts\n\n"
-                f"{lstm_out}"
-            )
-            st.session_state.report = report
-            st.rerun()
-
-if "report" in st.session_state:
-    st.markdown("---")
-    st.subheader("Daily AI-Generated Report")
-    st.markdown(st.session_state.report, unsafe_allow_html=True)
-
 st.caption("Built with real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")
