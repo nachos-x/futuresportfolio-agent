@@ -43,7 +43,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-st.markdown('<h1 class="main-title">📈 Autonomous Energy Futures Monitor</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-title">Autonomous Energy Futures Monitor</h1>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle">Multi-Agent AI System • CrewAI + Real Market Data + LSTM Forecasting</p>', unsafe_allow_html=True)
 
 
@@ -57,7 +57,7 @@ st.markdown("""
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    if st.button("🚀 Generate Latest Report", type="primary", use_container_width=True):
+    if st.button("Generate Latest Report", type="primary", use_container_width=True):
         with st.spinner("Running multi-agent analysis... This may take 30–60 seconds"):
             result = crew.kickoff()
             st.session_state.report = str(result)
