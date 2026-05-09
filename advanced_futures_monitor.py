@@ -69,8 +69,11 @@ def stock_cross_checker() -> str:
             # Normal status
             else:
                 trend = "Bullish" if gap_pct > 0 else "Bearish"
-                imminent_label = "far from cross"
-                status.append(f"- {display_name} ({ticker}): {trend} trend | SMA gap {gap_pct:+.2f}%")
+                color = "green" if gap_pct > 0 else "red"
+                status.append(
+                    f'- {display_name} ({ticker}): {trend} trend | SMA gap '
+                    f'<span style="color:{color}">{gap_pct:+.2f}%</span>'
+                )
         except Exception:
             pass
 
@@ -104,7 +107,15 @@ def backtester() -> str:
             data["strategy_ret"] = data["position"].shift(1) * data["Close"].pct_change()
             strategy_return = (1 + data["strategy_ret"].dropna()).prod() - 1
             bh_return = float(data["Close"].iloc[-1]) / float(data["Close"].iloc[0]) - 1
-            results.append(f"- {display_name} ({ticker}): Strategy {strategy_return*100:+.2f}% | Buy&Hold {bh_return*100:+.2f}%")
+            s_pct = strategy_return * 100
+            b_pct = bh_return * 100
+            s_color = "green" if s_pct > 0 else "red"
+            b_color = "green" if b_pct > 0 else "red"
+            results.append(
+                f'- {display_name} ({ticker}): '
+                f'Strategy <span style="color:{s_color}">{s_pct:+.2f}%</span> | '
+                f'Buy&amp;Hold <span style="color:{b_color}">{b_pct:+.2f}%</span>'
+            )
         except Exception as e:
             results.append(f"- {display_name} ({ticker}): Calculation error — {e}")
     return "5-Year Backtest Summary\n" + "\n".join(results)
