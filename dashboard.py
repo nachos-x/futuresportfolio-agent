@@ -3,25 +3,10 @@ from advanced_stock_monitor import crew
 
 st.set_page_config(page_title="Energy Futures Monitor", layout="wide")
 
-st.markdown("""
-<style>
-h1, h2, h3, h4, h5 {
-    font-size: 1.6rem !important;
-    font-weight: 700 !important;
-    margin-top: 1.2rem !important;
-    margin-bottom: 0.6rem !important;
-    color: #1f77b4;
-}
-h4 {
-    font-size: 1.35rem !important;
-    border-bottom: 2px solid #1f77b4;
-    padding-bottom: 4px;
-}
-</style>
-""", unsafe_allow_html=True)
-
 st.title("Autonomous Energy Futures Monitor")
 st.markdown("**Multi-Agent AI System • CrewAI + Real Market Data + LSTM Forecasting**")
+
+st.markdown("---")
 
 PORTFOLIO = ["CL=F", "BZ=F", "NG=F", "HO=F", "RB=F", "GC=F"]
 
@@ -34,7 +19,26 @@ TICKER_DISPLAY = {
     "GC=F": "Gold Futures"
 }
 
-col1, col2 = st.columns([1, 3])
+st.subheader("Current Portfolio")
+st.write(" • ".join([TICKER_DISPLAY[t] for t in PORTFOLIO]))
+
+st.markdown("---")
+
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    if st.button("Generate Latest Report", type="primary", use_container_width=True):
+        with st.spinner("Running multi-agent analysis... Please wait"):
+            result = crew.kickoff()
+            st.session_state.report = str(result)
+            st.rerun()
+
+
+if "report" in st.session_state:
+    st.markdown("---")
+    st.subheader("Daily AI-Generated Report")
+    st.markdown(st.session_state.report, unsafe_allow_html=True)
+
+st.caption("Built with **3 specialized AI agents** • Real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")col1, col2 = st.columns([1, 3])
 
 with col1:
     if st.button("Generate Latest Report", type="primary", use_container_width=True):
