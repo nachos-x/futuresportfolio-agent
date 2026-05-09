@@ -168,23 +168,20 @@ def lstm_price_forecaster() -> str:
 
 technical_analyst = Agent(
     role="Technical Analyst",
-    goal="Run tools and return raw outputs only.",
-    tools=[stock_cross_checker, backtester],
-    llm=llm
+    goal="Run cross checker and backtester.",
+    tools=[stock_cross_checker, backtester]
 )
 
 news_researcher = Agent(
     role="Financial News Researcher",
-    goal="Run news tool and return raw output.",
-    tools=[news_fetcher],
-    llm=llm
+    goal="Run news fetcher.",
+    tools=[news_fetcher]
 )
 
 forecast_agent = Agent(
     role="ML Price Forecaster",
-    goal="Run LSTM tool and assemble clean report.",
-    tools=[lstm_price_forecaster],
-    llm=llm
+    goal="Assemble the final report.",
+    tools=[lstm_price_forecaster]
 )
 
 technical_task = Task(
