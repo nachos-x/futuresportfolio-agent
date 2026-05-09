@@ -9,7 +9,6 @@ import yfinance as yf
 import requests
 from xml.etree import ElementTree as ET
 import streamlit as st
-
 from crewai import Agent, Task, Crew, LLM
 from crewai.tools import tool
 
@@ -44,7 +43,6 @@ def stock_cross_checker() -> str:
             pass
     return "\n".join(alerts) if alerts else "No crosses detected today."
 
-
 @tool("Backtester")
 def backtester() -> str:
     """5-year SMA crossover backtest."""
@@ -67,19 +65,19 @@ def backtester() -> str:
             results.append(f"{ticker}: Calculation error")
     return "\n".join(results) if results else "No backtest results."
 
-
 @tool("News Fetcher")
 def news_fetcher() -> str:
-    """Fetches recent news from Google News RSS using built-in libs."""
+    """Fetches recent news from Google News RSS."""
     news_items = []
     for t in PORTFOLIO:
         try:
-            rss_url = f"https://news.google.com/rss/search?q={t}+stock&hl=en-US&gl=US&ceid=US:en"
+            # Improved query for better energy/futures news
+            rss_url = f"https://news.google.com/rss/search?q={t}+futures+energy+oil+gas&hl=en-US&gl=US&ceid=US:en"
             response = requests.get(rss_url, timeout=5)
             if response.status_code != 200:
                 continue
             root = ET.fromstring(response.content)
-            for item in root.findall(".//item")[:3]:  # Top 3 per ticker
+            for item in root.findall(".//item")[:3]:
                 title_elem = item.find("title")
                 source_elem = item.find("source")
                 link_elem = item.find("link")
@@ -90,7 +88,6 @@ def news_fetcher() -> str:
         except:
             pass
     return "\n\n".join(news_items) if news_items else "No recent news found."
-
 
 @tool("LSTM Price Forecaster")
 def lstm_price_forecaster() -> str:
@@ -105,14 +102,11 @@ def lstm_price_forecaster() -> str:
             data = df.values.reshape(-1, 1)
             scaler = MinMaxScaler(feature_range=(0, 1))
             scaled_data = scaler.fit_transform(data)
-
             seq_length = 60
             x = np.array([scaled_data[i-seq_length:i, 0] for i in range(seq_length, len(scaled_data))]).reshape(-1, seq_length, 1)
             y = scaled_data[seq_length:]
-
             x_train = torch.from_numpy(x).float()
             y_train = torch.from_numpy(y).float()
-
             class LSTMModel(nn.Module):
                 def __init__(self):
                     super().__init__()
@@ -121,23 +115,19 @@ def lstm_price_forecaster() -> str:
                 def forward(self, x):
                     out, _ = self.lstm(x)
                     return self.fc(out[:, -1, :])
-
             model = LSTMModel()
             optimizer = optim.Adam(model.parameters(), lr=0.001)
             criterion = nn.MSELoss()
-
             model.train()
-            for _ in range(15):  # Reduced for speed
+            for _ in range(15):
                 outputs = model(x_train)
                 loss = criterion(outputs, y_train)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
             predictions = []
             current_seq = scaled_data[-seq_length:].copy()
             current_tensor = torch.from_numpy(current_seq.reshape(1, seq_length, 1)).float()
-
             model.eval()
             for _ in range(5):
                 with torch.no_grad():
@@ -146,18 +136,16 @@ def lstm_price_forecaster() -> str:
                 predictions.append(pred_val)
                 current_seq = np.append(current_seq[1:], [[pred_val]], axis=0)
                 current_tensor = torch.from_numpy(current_seq.reshape(1, seq_length, 1)).float()
-
             predictions = scaler.inverse_transform(np.array(predictions).reshape(-1, 1)).flatten()
             last_date = df.index[-1]
             future_dates = pd.date_range(last_date + pd.Timedelta(days=1), periods=5, freq='B')
-
             pred_lines = [f"{date.strftime('%Y-%m-%d')}: ${price:.2f}" for date, price in zip(future_dates, predictions)]
             forecasts.append(f"{ticker} 5-Day LSTM Forecast:\n" + "\n".join(pred_lines))
         except:
             forecasts.append(f"{ticker}: Forecast failed")
     return "\n\n".join(forecasts) if forecasts else "No forecasts."
 
-
+# Agents
 technical_analyst = Agent(
     role="Technical Analyst",
     goal="Run cross checker and backtester, return ONLY their exact raw outputs in plain text.",
@@ -188,15 +176,14 @@ forecast_agent = Agent(
     verbose=True
 )
 
+# Tasks
 technical_task = Task(
     description="""Run Stock Cross Checker then Backtester.
 Output EXACTLY this plain text structure:
 Cross Alerts
 [exact plain text output from Stock Cross Checker]
-
 5-Year Backtest Summary
 [exact plain text output from Backtester]
-
 Do not add any other text, JSON, summaries, or extra lines. Paste raw tool outputs only.""",
     expected_output="Raw plain text outputs in sections",
     agent=technical_analyst
@@ -207,7 +194,6 @@ news_task = Task(
 Output EXACTLY this plain text structure:
 Recent News
 [exact plain text output from News Fetcher]
-
 Do not add any other text, summaries, or extra lines. Paste raw tool output only.""",
     expected_output="Raw plain text output in section",
     agent=news_researcher
@@ -215,22 +201,29 @@ Do not add any other text, summaries, or extra lines. Paste raw tool output only
 
 forecast_task = Task(
     description="""Run LSTM Price Forecaster.
-Then assemble the FULL report by pasting EXACTLY the plain text outputs from ALL previous tasks + your own:
+Then assemble the FULL report with **clean, professional formatting** using proper headings, spacing, and structure.
 
-Cross Alerts
-[exact plain text output from technical_task's Cross Alerts section]
+Use this exact structure with good spacing:
 
-5-Year Backtest Summary
-[exact plain text output from technical_task's Backtest section]
+#### Cross Alerts
+[output from technical_task]
 
-Recent News
-[exact plain text output from news_task]
+#### 5-Year Backtest Summary
+[output from technical_task]
 
-5-Day LSTM Forecasts
-[exact plain text output from LSTM Price Forecaster]
+#### Recent News
+[output from news_task]
 
-Do not add, change, summarize, or include any extra text, JSON, or lines. Paste verbatim plain text only.""",
-    expected_output="Full combined plain text report with raw sections",
+#### 5-Day LSTM Forecasts
+[output from LSTM Price Forecaster]
+
+**Formatting Rules:**
+- Add blank lines between sections
+- Keep each ticker forecast on its own line
+- Do NOT smash everything into one paragraph
+- Make it readable and well-spaced
+""",
+    expected_output="Full combined report with clean markdown formatting",
     agent=forecast_agent,
     context=[technical_task, news_task]
 )
