@@ -254,23 +254,8 @@ news_task = Task(
 )
 
 forecast_task = Task(
-    description=(
-        "Run the LSTM forecaster tool to get price forecasts. "
-        "Then assemble a final report with EXACTLY these four sections in order:\n"
-        "## Technical Analysis\n"
-        "Paste the full raw output from the cross checker and backtester verbatim.\n"
-        "## Latest News\n"
-        "Paste the full raw news output verbatim, including every headline and link. Do NOT summarize or omit any headlines.\n"
-        "## LSTM Price Forecasts\n"
-        "Paste the full raw LSTM forecast output verbatim, including all colored price lines.\n"
-        "## Summary\n"
-        "Write 3-5 sentences summarizing the key takeaways across all three sections."
-    ),
-    expected_output=(
-        "A markdown report with four sections: Technical Analysis, Latest News "
-        "(all headlines and links preserved), LSTM Price Forecasts, and Summary."
-    ),
-    context=[technical_task, news_task],
+    description="Run the LSTM forecaster tool and return only the raw output. Do not add any commentary.",
+    expected_output="Raw text output from the LSTM forecaster tool only.",
     agent=forecast_agent,
 )
 
