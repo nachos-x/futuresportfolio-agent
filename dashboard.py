@@ -1,5 +1,5 @@
 import streamlit as st
-from advanced_stock_monitor import crew
+from advanced_futures_monitor import crew
 
 st.set_page_config(page_title="Energy Futures Monitor", layout="wide")
 
