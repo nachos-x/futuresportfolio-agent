@@ -22,6 +22,7 @@ llm = LLM(
 
 @tool("Stock Cross Checker")
 def stock_cross_checker() -> str:
+    """Detects golden and death crosses using 50/200 SMA."""
     alerts = []
     for ticker in PORTFOLIO:
         try:
@@ -43,6 +44,7 @@ def stock_cross_checker() -> str:
 
 @tool("Backtester")
 def backtester() -> str:
+    """5-year SMA crossover strategy backtest vs buy and hold."""
     results = []
     for ticker in PORTFOLIO:
         try:
@@ -64,6 +66,7 @@ def backtester() -> str:
 
 @tool("News Fetcher")
 def news_fetcher() -> str:
+    """Fetches recent news for energy futures with clickable links."""
     TICKER_DISPLAY = {
         "CL=F": "WTI Crude Oil",
         "BZ=F": "Brent Crude Oil",
@@ -95,6 +98,7 @@ def news_fetcher() -> str:
 
 @tool("LSTM Price Forecaster")
 def lstm_price_forecaster() -> str:
+    """Generates 5-day LSTM price forecasts with color indicators."""
     TICKER_DISPLAY = {
         "CL=F": "WTI Crude Oil",
         "BZ=F": "Brent Crude Oil",
@@ -160,6 +164,7 @@ def lstm_price_forecaster() -> str:
         except:
             forecasts.append(f"**{display_name} ({ticker})**: Forecast failed")
     return "\n\n".join(forecasts) if forecasts else "No forecasts."
+
 
 technical_analyst = Agent(
     role="Technical Analyst",
