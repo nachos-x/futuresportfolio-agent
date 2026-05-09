@@ -65,7 +65,7 @@ with col2:
 
 
 if "report" in st.session_state:
-    st.markdown("### 📊 Daily AI-Generated Report")
+    st.markdown("### Daily AI-Generated Report")
     st.markdown(st.session_state.report, unsafe_allow_html=False)
     st.divider()
 
