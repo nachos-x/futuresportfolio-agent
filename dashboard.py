@@ -9,7 +9,7 @@ from advanced_futures_monitor import (
 st.set_page_config(page_title="Energy Futures Monitor", layout="wide")
 
 st.title("Autonomous Energy Futures Monitor")
-st.markdown("**Multi-Agent AI System • CrewAI + Real Market Data + LSTM Forecasting**")
+st.markdown("**Multi-Agent AI System • Real Market Data + LSTM Forecasting**")
 st.markdown("---")
 
 PORTFOLIO = ["CL=F", "BZ=F", "NG=F", "HO=F", "RB=F", "GC=F"]
@@ -26,9 +26,9 @@ st.subheader("Current Portfolio")
 st.write(" • ".join([TICKER_DISPLAY[t] for t in PORTFOLIO]))
 st.markdown("---")
 
-if "report_version" not in st.session_state or st.session_state.report_version != "v3":
+if "report_version" not in st.session_state or st.session_state.report_version != "v4":
     st.session_state.pop("report", None)
-    st.session_state.report_version = "v3"
+    st.session_state.report_version = "v4"
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
@@ -60,4 +60,4 @@ if "report" in st.session_state:
     st.subheader("Daily AI-Generated Report")
     st.markdown(st.session_state.report, unsafe_allow_html=True)
 
-st.caption("Built with **3 specialized AI agents** • Real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")
+st.caption("Built with real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")
