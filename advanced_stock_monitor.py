@@ -67,26 +67,50 @@ def backtester() -> str:
 
 @tool("News Fetcher")
 def news_fetcher() -> str:
-    """Fetches recent news from Google News RSS."""
+    """Fetches recent news with clean formatting and full names."""
+    
+    TICKER_DISPLAY = {
+        "CL=F": "WTI Crude Oil",
+        "BZ=F": "Brent Crude Oil",
+        "NG=F": "Natural Gas",
+        "HO=F": "Heating Oil",
+        "RB=F": "RBOB Gasoline",
+        "GC=F": "Gold Futures"
+    }
+    
     news_items = []
+    
     for t in PORTFOLIO:
         try:
-            # Improved query for better energy/futures news
+            display_name = TICKER_DISPLAY.get(t, t)
             rss_url = f"https://news.google.com/rss/search?q={t}+futures+energy+oil+gas&hl=en-US&gl=US&ceid=US:en"
-            response = requests.get(rss_url, timeout=5)
+            response = requests.get(rss_url, timeout=6)
             if response.status_code != 200:
                 continue
+                
             root = ET.fromstring(response.content)
+            items = []
+            
             for item in root.findall(".//item")[:3]:
                 title_elem = item.find("title")
-                source_elem = item.find("source")
                 link_elem = item.find("link")
-                title = title_elem.text if title_elem is not None else "Untitled"
-                pub = source_elem.text if source_elem is not None else "Unknown"
-                link = link_elem.text if link_elem is not None else ""
-                news_items.append(f"{t}: [{title} ({pub})]({link})")
+                
+                if title_elem is not None and link_elem is not None:
+                    title = title_elem.text
+                    link = link_elem.text
+                    
+                    # Clean title
+                    if " - " in title:
+                        title = title.split(" - ")[0]
+                    
+                    items.append(f"- [{title}]({link})")
+            
+            if items:
+                news_items.append(f"**{display_name} ({t})**\n" + "\n".join(items))
+                
         except:
             pass
+    
     return "\n\n".join(news_items) if news_items else "No recent news found."
 
 @tool("LSTM Price Forecaster")
@@ -145,7 +169,6 @@ def lstm_price_forecaster() -> str:
             forecasts.append(f"{ticker}: Forecast failed")
     return "\n\n".join(forecasts) if forecasts else "No forecasts."
 
-# Agents
 technical_analyst = Agent(
     role="Technical Analyst",
     goal="Run cross checker and backtester, return ONLY their exact raw outputs in plain text.",
@@ -168,15 +191,14 @@ news_researcher = Agent(
 
 forecast_agent = Agent(
     role="ML Price Forecaster",
-    goal="Run LSTM forecaster and assemble the full report from all previous outputs. Paste everything exactly in plain text—no changes.",
-    backstory="You are a silent assembler. Run your tool, then copy-paste all raw outputs into sections verbatim. No summaries or extra formatting.",
+    goal="Run LSTM forecaster and assemble the full report from all previous outputs.",
+    backstory="You are a silent assembler. Run your tool, then copy-paste all raw outputs into sections verbatim with clean formatting.",
     tools=[lstm_price_forecaster],
     llm=llm,
     allow_delegation=False,
     verbose=True
 )
 
-# Tasks
 technical_task = Task(
     description="""Run Stock Cross Checker then Backtester.
 Output EXACTLY this plain text structure:
@@ -184,7 +206,7 @@ Cross Alerts
 [exact plain text output from Stock Cross Checker]
 5-Year Backtest Summary
 [exact plain text output from Backtester]
-Do not add any other text, JSON, summaries, or extra lines. Paste raw tool outputs only.""",
+Do not add any other text, JSON, summaries, or extra lines.""",
     expected_output="Raw plain text outputs in sections",
     agent=technical_analyst
 )
@@ -194,16 +216,16 @@ news_task = Task(
 Output EXACTLY this plain text structure:
 Recent News
 [exact plain text output from News Fetcher]
-Do not add any other text, summaries, or extra lines. Paste raw tool output only.""",
+Do not add any other text, summaries, or extra lines.""",
     expected_output="Raw plain text output in section",
     agent=news_researcher
 )
 
 forecast_task = Task(
     description="""Run LSTM Price Forecaster.
-Then assemble the FULL report with **clean, professional formatting** using proper headings, spacing, and structure.
+Then assemble the FULL report with clean, professional formatting using proper headings and spacing.
 
-Use this exact structure with good spacing:
+Use this exact structure:
 
 #### Cross Alerts
 [output from technical_task]
@@ -219,8 +241,7 @@ Use this exact structure with good spacing:
 
 **Formatting Rules:**
 - Add blank lines between sections
-- Keep each ticker forecast on its own line
-- Do NOT smash everything into one paragraph
+- Keep each ticker forecast clearly separated
 - Make it readable and well-spaced
 """,
     expected_output="Full combined report with clean markdown formatting",
