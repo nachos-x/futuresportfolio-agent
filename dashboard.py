@@ -5,7 +5,7 @@ st.set_page_config(page_title="Energy Futures Monitor", layout="wide")
 st.title("Autonomous Energy Futures Monitor")
 st.markdown("**Multi-Agent AI System • CrewAI + Real Market Data + LSTM Forecasting**")
 
-# Clean tickers (for the crew)
+# Clean tickers (used by the crew)
 PORTFOLIO = ["CL=F", "BZ=F", "NG=F", "HO=F", "RB=F", "GC=F"]
 
 # Nice display names
@@ -28,18 +28,18 @@ with col1:
 
 with col2:
     st.markdown("### Current Portfolio")
-    cols = st.columns(3)
-    for i, ticker in enumerate(PORTFOLIO):
-        with cols[i % 3]:
-            st.metric(
-                label=TICKER_DISPLAY[ticker],
-                value=ticker,
-                delta="Energy Futures"
-            )
+    display_names = [TICKER_DISPLAY[t] for t in PORTFOLIO]
+    st.write(" • ".join(display_names))
 
 if "report" in st.session_state:
     st.markdown("### Daily AI-Generated Report")
-    # Better formatting
-    st.markdown(st.session_state.report)
+    
+    # Clean, professional formatting
+    st.text_area(
+        label="Report",
+        value=st.session_state.report,
+        height=850,
+        label_visibility="collapsed"
+    )
 
 st.caption("Built with **3 specialized AI agents** • Real yfinance data • LSTM forecasting • Deployed on Streamlit Cloud")
