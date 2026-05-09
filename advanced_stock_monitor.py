@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -23,7 +22,6 @@ llm = LLM(
 
 @tool("Stock Cross Checker")
 def stock_cross_checker() -> str:
-    """Detects golden or death crosses."""
     alerts = []
     for ticker in PORTFOLIO:
         try:
@@ -45,13 +43,12 @@ def stock_cross_checker() -> str:
 
 @tool("Backtester")
 def backtester() -> str:
-    """5-year SMA crossover backtest."""
     results = []
     for ticker in PORTFOLIO:
         try:
             data = yf.Ticker(ticker).history(period="5y")
             if len(data) < 250:
-                results.append(f"{ticker}: Insufficient data")
+                results.append(f"- {ticker}: Insufficient data")
                 continue
             data["SMA50"] = data["Close"].rolling(50).mean()
             data["SMA200"] = data["Close"].rolling(200).mean()
@@ -60,15 +57,13 @@ def backtester() -> str:
             data["strategy_ret"] = data["position"].shift(1) * data["Close"].pct_change()
             strategy_return = (1 + data["strategy_ret"].dropna()).prod() - 1
             bh_return = data["Close"].iloc[-1] / data["Close"].iloc[0] - 1
-            results.append(f"{ticker}: Strategy {strategy_return*100:+.2f}% | Buy&Hold {bh_return*100:+.2f}%")
+            results.append(f"- {ticker}: Strategy {strategy_return*100:+.2f}% | Buy&Hold {bh_return*100:+.2f}%")
         except:
-            results.append(f"{ticker}: Calculation error")
-    return "\n".join(results) if results else "No backtest results."
+            results.append(f"- {ticker}: Calculation error")
+    return "5-Year Backtest Summary\n" + "\n".join(results)
 
 @tool("News Fetcher")
 def news_fetcher() -> str:
-    """Fetches recent news with clean formatting and full names."""
-    
     TICKER_DISPLAY = {
         "CL=F": "WTI Crude Oil",
         "BZ=F": "Brent Crude Oil",
@@ -77,52 +72,46 @@ def news_fetcher() -> str:
         "RB=F": "RBOB Gasoline",
         "GC=F": "Gold Futures"
     }
-    
-    news_items = []
-    
+    all_news = []
     for t in PORTFOLIO:
         try:
-            display_name = TICKER_DISPLAY.get(t, t)
+            display_name = TICKER_DISPLAY[t]
             rss_url = f"https://news.google.com/rss/search?q={t}+futures+energy+oil+gas&hl=en-US&gl=US&ceid=US:en"
             response = requests.get(rss_url, timeout=6)
-            if response.status_code != 200:
-                continue
-                
+            if response.status_code != 200: continue
             root = ET.fromstring(response.content)
             items = []
-            
             for item in root.findall(".//item")[:3]:
-                title_elem = item.find("title")
-                link_elem = item.find("link")
-                
-                if title_elem is not None and link_elem is not None:
-                    title = title_elem.text
-                    link = link_elem.text
-                    
-                    # Clean title
-                    if " - " in title:
-                        title = title.split(" - ")[0]
-                    
-                    items.append(f"- [{title}]({link})")
-            
+                title = item.find("title").text
+                link = item.find("link").text
+                if " - " in title:
+                    title = title.split(" - ")[0]
+                items.append(f"- [{title}]({link})")
             if items:
-                news_items.append(f"**{display_name} ({t})**\n" + "\n".join(items))
-                
+                all_news.append(f"**{display_name} ({t})**\n" + "\n".join(items))
         except:
             pass
-    
-    return "\n\n".join(news_items) if news_items else "No recent news found."
+    return "\n\n".join(all_news) if all_news else "No recent news found."
 
 @tool("LSTM Price Forecaster")
 def lstm_price_forecaster() -> str:
-    """Generates 5-day LSTM forecasts."""
+    TICKER_DISPLAY = {
+        "CL=F": "WTI Crude Oil",
+        "BZ=F": "Brent Crude Oil",
+        "NG=F": "Natural Gas",
+        "HO=F": "Heating Oil",
+        "RB=F": "RBOB Gasoline",
+        "GC=F": "Gold Futures"
+    }
     forecasts = []
     for ticker in PORTFOLIO:
         try:
+            display_name = TICKER_DISPLAY[t]
             df = yf.download(ticker, period="3y", progress=False)["Close"]
             if len(df) < 200:
-                forecasts.append(f"{ticker}: Insufficient data")
+                forecasts.append(f"**{display_name} ({ticker})**: Insufficient data")
                 continue
+            current_price = df.iloc[-1]
             data = df.values.reshape(-1, 1)
             scaler = MinMaxScaler(feature_range=(0, 1))
             scaled_data = scaler.fit_transform(data)
@@ -163,88 +152,67 @@ def lstm_price_forecaster() -> str:
             predictions = scaler.inverse_transform(np.array(predictions).reshape(-1, 1)).flatten()
             last_date = df.index[-1]
             future_dates = pd.date_range(last_date + pd.Timedelta(days=1), periods=5, freq='B')
-            pred_lines = [f"{date.strftime('%Y-%m-%d')}: ${price:.2f}" for date, price in zip(future_dates, predictions)]
-            forecasts.append(f"{ticker} 5-Day LSTM Forecast:\n" + "\n".join(pred_lines))
+            lines = [f"**{display_name} ({ticker}) 5-Day Forecast**"]
+            for date, price in zip(future_dates, predictions):
+                color = "green" if price > current_price else "red"
+                lines.append(f'- {date.strftime("%Y-%m-%d")}: <span style="color:{color}">${price:.2f}</span>')
+            forecasts.append("\n".join(lines))
         except:
-            forecasts.append(f"{ticker}: Forecast failed")
+            forecasts.append(f"**{display_name} ({ticker})**: Forecast failed")
     return "\n\n".join(forecasts) if forecasts else "No forecasts."
 
 technical_analyst = Agent(
     role="Technical Analyst",
-    goal="Run cross checker and backtester, return ONLY their exact raw outputs in plain text.",
-    backstory="You are a silent tool runner. Do not summarize, add text, or use JSON/dictionaries. Output plain text only from the tools.",
+    goal="Run cross checker and backtester.",
     tools=[stock_cross_checker, backtester],
-    llm=llm,
-    allow_delegation=False,
-    verbose=True
+    llm=llm, allow_delegation=False, verbose=True
 )
 
 news_researcher = Agent(
     role="Financial News Researcher",
-    goal="Run news fetcher, return ONLY its exact raw output in plain text.",
-    backstory="You are a silent tool runner. Do not summarize, add text, or use JSON. Output plain text only from the tool.",
+    goal="Run news fetcher.",
     tools=[news_fetcher],
-    llm=llm,
-    allow_delegation=False,
-    verbose=True
+    llm=llm, allow_delegation=False, verbose=True
 )
 
 forecast_agent = Agent(
     role="ML Price Forecaster",
-    goal="Run LSTM forecaster and assemble the full report from all previous outputs.",
-    backstory="You are a silent assembler. Run your tool, then copy-paste all raw outputs into sections verbatim with clean formatting.",
+    goal="Assemble the final report with clean formatting.",
     tools=[lstm_price_forecaster],
-    llm=llm,
-    allow_delegation=False,
-    verbose=True
+    llm=llm, allow_delegation=False, verbose=True
 )
 
 technical_task = Task(
     description="""Run Stock Cross Checker then Backtester.
-Output EXACTLY this plain text structure:
+Output exactly:
 Cross Alerts
-[exact plain text output from Stock Cross Checker]
+[raw output]
 5-Year Backtest Summary
-[exact plain text output from Backtester]
-Do not add any other text, JSON, summaries, or extra lines.""",
-    expected_output="Raw plain text outputs in sections",
+[raw output]""",
     agent=technical_analyst
 )
 
 news_task = Task(
-    description="""Run News Fetcher.
-Output EXACTLY this plain text structure:
-Recent News
-[exact plain text output from News Fetcher]
-Do not add any other text, summaries, or extra lines.""",
-    expected_output="Raw plain text output in section",
+    description="Run News Fetcher and return the exact output.",
     agent=news_researcher
 )
 
 forecast_task = Task(
-    description="""Run LSTM Price Forecaster.
-Then assemble the FULL report with clean, professional formatting using proper headings and spacing.
-
-Use this exact structure:
+    description="""Run the LSTM forecaster, then create the final report using this exact structure:
 
 #### Cross Alerts
-[output from technical_task]
+[From technical_task]
 
 #### 5-Year Backtest Summary
-[output from technical_task]
+[From technical_task]
 
 #### Recent News
-[output from news_task]
+[From news_task]
 
 #### 5-Day LSTM Forecasts
-[output from LSTM Price Forecaster]
+[From LSTM tool]
 
-**Formatting Rules:**
-- Add blank lines between sections
-- Keep each ticker forecast clearly separated
-- Make it readable and well-spaced
-""",
-    expected_output="Full combined report with clean markdown formatting",
+Make sure each section is clean and well-spaced.""",
     agent=forecast_agent,
     context=[technical_task, news_task]
 )
@@ -252,6 +220,5 @@ Use this exact structure:
 crew = Crew(
     agents=[technical_analyst, news_researcher, forecast_agent],
     tasks=[technical_task, news_task, forecast_task],
-    verbose=True,
-    memory=False
+    verbose=True, memory=False
 )
