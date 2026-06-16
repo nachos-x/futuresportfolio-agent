@@ -8,8 +8,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=streamlit   # Change to your VM username (e.g. ubuntu, debian, nachos)
-Group=streamlit
+User=nachi_tib
+Group=nachi_tib
 WorkingDirectory=/opt/stockportfolio-agent
 
 # IMPORTANT: Set your API key here or use EnvironmentFile

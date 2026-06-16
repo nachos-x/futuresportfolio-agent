@@ -11,11 +11,13 @@ A multi-agent AI-powered dashboard built with Streamlit and CrewAI that autonomo
 - LSTM Forecasting: Trains PyTorch LSTM models for 5-day price predictions per futures contract.
 - Streamlit Dashboard: One-click report generation with markdown rendering for clean output.
 - Optimizations: Caching for yfinance data, reduced LSTM epochs for speed, secrets management for API keys.
-- Deployment-Ready: Works on Streamlit Cloud (st.secrets) and self-hosted (GCP VM, Docker) via OPENROUTER_API_KEY env var.
+- Deployment-Ready: Self-hosted on Google Cloud Compute Engine (systemd) with fallback support for Streamlit Cloud via `OPENROUTER_API_KEY` env var or `st.secrets`.
 
 ## Demo
 
-Live app: [futures-agent.streamlit.app](https://futuresportfolio-agent.streamlit.app)
+**Current self-hosted deployment:** http://136.114.12.153:8501 (Google Cloud Compute Engine)
+
+Previous Streamlit Cloud version: [futuresportfolio-agent.streamlit.app](https://futuresportfolio-agent.streamlit.app)
 
 ## Example Report Output:
 
@@ -74,13 +76,13 @@ CL=F 5-Day LSTM Forecast:
 
 ## Deployment
 
-### Streamlit Cloud (current)
-The app is currently deployed at [futuresportfolio-agent.streamlit.app](https://futuresportfolio-agent.streamlit.app).  
-Secrets (OPENROUTER_API_KEY) are configured in the Streamlit Cloud dashboard.
+### Streamlit Cloud (previous / legacy)
+The app was previously deployed at [futuresportfolio-agent.streamlit.app](https://futuresportfolio-agent.streamlit.app).  
+Secrets (OPENROUTER_API_KEY) were configured in the Streamlit Cloud dashboard.
 
-### GCP VM (self-hosted)
+### GCP VM (current primary deployment)
 
-This repo is ready to run on a Google Compute Engine VM (recommended if you want full control, custom compute, or to avoid Streamlit Cloud costs/limits).
+This is the current production deployment of the app. The repo is fully set up to run on a Google Compute Engine VM (recommended if you want full control, custom compute, or to avoid Streamlit Cloud costs/limits).
 
 #### Recommended VM specs
 - Machine type: `e2-standard-4` (4 vCPU, 16 GB) or `e2-highmem-2` minimum.  
