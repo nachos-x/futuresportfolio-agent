@@ -1,0 +1,39 @@
+# Systemd service unit for running the Streamlit app on a GCP VM
+# Place at: /etc/systemd/system/streamlit-futures.service
+# Then: sudo systemctl daemon-reload && sudo systemctl enable --now streamlit-futures
+
+[Unit]
+Description=Energy Futures Monitor Streamlit App
+After=network.target
+
+[Service]
+Type=simple
+User=streamlit   # Change to your VM username (e.g. ubuntu, debian, nachos)
+Group=streamlit
+WorkingDirectory=/opt/stockportfolio-agent
+
+# IMPORTANT: Set your API key here or use EnvironmentFile
+Environment="OPENROUTER_API_KEY=sk-or-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+# Or load from file:
+# EnvironmentFile=/etc/stockportfolio-agent/secrets.env
+
+# Use the virtualenv or system python after pip install
+# Recommended: use a dedicated venv in /opt/stockportfolio-agent/venv
+ExecStart=/opt/stockportfolio-agent/venv/bin/streamlit run dashboard.py \
+    --server.port=8501 \
+    --server.address=0.0.0.0 \
+    --server.headless=true
+
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=streamlit-futures
+
+# Resource limits (tune to your machine type)
+# Memory high because of PyTorch + CrewAI in-process
+MemoryMax=12G
+CPUQuota=300%
+
+[Install]
+WantedBy=multi-user.target

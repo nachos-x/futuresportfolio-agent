@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  futures-monitor:
+    build: .
+    image: futures-monitor:latest
+    container_name: futures-monitor
+    ports:
+      - "8501:8501"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    restart: unless-stopped
+    # Increase resources if your VM has them
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '3.5'
+    #       memory: 12G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

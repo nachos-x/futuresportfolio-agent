@@ -1,0 +1,42 @@
+# Ignore local dev artifacts
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Git and IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+
+# Local secrets and env (never ship these)
+.streamlit/secrets.toml
+.env
+.env.local
+*.log
+
+# OS / temp
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Large unnecessary files
+*.md
+!README.md
+docs/
+tests/
+notebooks/
+*.ipynb
+
+# GCP / deployment local files (if you add later)
+*.tfstate
+*.tfvars
+cloud-sql-proxy

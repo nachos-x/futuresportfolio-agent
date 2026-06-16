@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -39,10 +40,25 @@ def fetch_close(ticker: str, period: str) -> pd.Series:
     return yf.download(ticker, period=period, progress=False)["Close"].squeeze()
 
 
+def get_openrouter_api_key() -> str:
+    """Get API key from env var (preferred for VMs/Docker) or Streamlit secrets (Cloud)."""
+    key = os.environ.get("OPENROUTER_API_KEY")
+    if key:
+        return key
+    try:
+        return st.secrets["OPENROUTER_API_KEY"]
+    except Exception:
+        raise RuntimeError(
+            "OPENROUTER_API_KEY not found. "
+            "Set the OPENROUTER_API_KEY environment variable (recommended for GCP VM) "
+            "or add it to .streamlit/secrets.toml for local/Streamlit Cloud."
+        )
+
+
 llm = LLM(
     model="openrouter/meta-llama/llama-3.3-70b-instruct",
     base_url="https://openrouter.ai/api/v1",
-    api_key=st.secrets["OPENROUTER_API_KEY"],
+    api_key=get_openrouter_api_key(),
     temperature=0.0,
 )
 
