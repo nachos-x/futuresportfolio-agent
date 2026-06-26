@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: streamlit-futures-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    # To enable HTTPS later (requires a domain and managed cert):
+    # networking.gke.io/managed-certificates: "streamlit-cert"
+    # networking.gke.io/v1beta1.FrontendConfig: "streamlit-frontend-config"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: streamlit-futures
+            port:
+              number: 80

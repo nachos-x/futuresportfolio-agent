@@ -1,36 +1,47 @@
-# Dockerfile for deploying the Energy Futures Monitor on GCP VM (or Cloud Run)
-# Uses CPU-only PyTorch to keep image size reasonable (~1.5-2GB final)
+# Dockerfile for deploying the Energy Futures Monitor on Kubernetes (GKE)
+# Uses CPU-only PyTorch to keep image size reasonable
 
 FROM python:3.12-slim
 
-# System dependencies (build tools sometimes needed by torch/scikit)
+# Install system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
 WORKDIR /app
 
-# Install Python dependencies
-# Use CPU torch explicitly to avoid pulling CUDA libs
+# Install Python deps (CPU torch first)
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy app code
 COPY . .
 
-# Streamlit configuration for container/VM use
-# (can be overridden via .streamlit/config.toml or flags)
+# Set ownership
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root
+USER appuser
+
+# Streamlit envs
 ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
-# Expose Streamlit port
 EXPOSE 8501
 
-# Default command — override with env for production tuning if needed
-CMD ["streamlit", "run", "dashboard.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
+# Use exec form
+CMD ["streamlit", "run", "dashboard.py", \
+     "--server.port=8501", \
+     "--server.address=0.0.0.0", \
+     "--server.headless=true", \
+     "--server.enableCORS=false", \
+     "--server.enableXsrfProtection=true"]

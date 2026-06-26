@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamlit-futures
+  labels:
+    app: streamlit-futures
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamlit-futures
+  template:
+    metadata:
+      labels:
+        app: streamlit-futures
+    spec:
+      containers:
+      - name: streamlit
+        image: us-central1-docker.pkg.dev/PROJECT_ID/streamlit-futures/streamlit-futures:latest
+        ports:
+        - containerPort: 8501
+        env:
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openrouter-secret
+              key: api-key
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+        livenessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+      securityContext:
+        fsGroup: 1000
